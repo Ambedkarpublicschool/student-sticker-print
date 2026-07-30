@@ -2,12 +2,12 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer (4x10 Grids/A4)</title>
+  <title>Student Sticker Printer (Fast Load - 4x10 Grid)</title>
   <style>
     /* A4 प्रिंट पेज सेटअप - शून्य मार्जिन */
     @page {
       size: A4 portrait;
-      margin: 0; /* प्रिंटर मार्जिन पूरी तरह शून्य */
+      margin: 0;
     }
 
     body { 
@@ -67,19 +67,18 @@
       /* A4 पेज को 4 कॉलम x 10 रो = 40 भागों में बांटना */
       .sticker-container {
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr); /* 4 बराबर कॉलम */
-        grid-template-rows: repeat(10, 1fr);   /* 10 बराबर रो */
-        width: 210mm;   /* A4 चौड़ाई */
-        height: 297mm;  /* A4 लंबाई */
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(10, 1fr);
+        width: 210mm;
+        height: 297mm;
         box-sizing: border-box;
         margin: 0;
         padding: 0;
         page-break-after: always;
       }
 
-      /* प्रत्येक स्टीकर की डिजाइनिंग */
       .sticker {
-        border: 0.2mm dashed #bbb; /* कटिंग गाइड के लिए हल्का बॉर्डर */
+        border: 0.2mm dashed #bbb;
         box-sizing: border-box;
         padding: 1.5mm;
         display: flex;
@@ -224,6 +223,25 @@
       });
     }
 
+    // थंबनेल यूआरएल (Fast Loading) जनरेट करने का फ़ंक्शन
+    function getFastThumbnailUrl(student) {
+      let fileId = student["Photo_ID"];
+      
+      if (!fileId && student["Student Photo Link (Drive)"]) {
+        const rawUrl = student["Student Photo Link (Drive)"];
+        const match = rawUrl.match(/id=([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+          fileId = match[1];
+        }
+      }
+
+      if (fileId) {
+        // sz=w100-h120 साइज पैरामीटर से गूगल बहुत ही हल्की और तेज़ थंबनेल इमेज देता है
+        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h120`;
+      }
+      return "https://via.placeholder.com/50";
+    }
+
     function generatePrintArea() {
       const printArea = document.getElementById("printArea");
       printArea.innerHTML = "";
@@ -239,28 +257,17 @@
           const student = currentFilteredData[index];
           const qty = parseInt(row.querySelector(".sticker-qty").value) || 1;
 
-          let photoUrl = "";
-          if (student["Photo_ID"]) {
-            photoUrl = `https://lh3.googleusercontent.com/d/${student["Photo_ID"]}`;
-          } else if (student["Student Photo Link (Drive)"]) {
-            const rawUrl = student["Student Photo Link (Drive)"];
-            const match = rawUrl.match(/id=([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-            if (match && match[1]) {
-              photoUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
-            } else {
-              photoUrl = rawUrl;
-            }
-          }
+          const photoUrl = getFastThumbnailUrl(student);
 
           for (let i = 0; i < qty; i++) {
             printArea.innerHTML += `
               <div class="sticker">
                 <img src="${photoUrl}" 
-                     referrerpolicy="no-referrer" 
-                     onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=${student["Photo_ID"]}';" />
+                     loading="eager"
+                     onerror="this.onerror=null; this.src='https://via.placeholder.com/50';" />
                 <div class="sticker-details">
                   <div class="student-name">${student["Student Name"] || ''}</div>
-                  <div class="student-info"><b>पिता:</b> ${student["Father's Name"] || ''}</div>
+                  <div class="student-info"><b>C/O:</b> ${student["Father's Name"] || ''}</div>
                   <div class="student-info"><b>Class:</b> ${student["Current Class"] || ''} (${student["Section"] || ''})</div>
                 </div>
               </div>
