@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer (Fast Load - 4x10 Grid)</title>
+  <title>Student Sticker Printer (4x10 Grid)</title>
   <style>
     /* A4 प्रिंट पेज सेटअप - शून्य मार्जिन */
     @page {
@@ -80,40 +80,76 @@
       .sticker {
         border: 0.2mm dashed #bbb;
         box-sizing: border-box;
-        padding: 1.5mm;
+        padding: 1mm 1.5mm;
         display: flex;
-        align-items: center;
-        overflow: hidden; /* बॉक्स से बाहर कुछ न निकले */
+        flex-direction: column; /* ऊपर स्कूल का नाम और नीचे छात्र विवरण */
+        justify-content: space-between;
+        overflow: hidden;
         height: 100%;
         width: 100%;
       }
 
+      /* स्कूल का हेडर (नाम और पता) */
+      .school-header {
+        text-align: center;
+        border-bottom: 0.1mm solid #000;
+        padding-bottom: 0.5mm;
+        margin-bottom: 1mm;
+      }
+
+      .school-name {
+        font-size: 7.5px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #000;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .school-address {
+        font-size: 5.5px;
+        color: #333;
+        line-height: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* छात्र विवरण और फोटो वाला लेआउट */
+      .student-body {
+        display: flex;
+        align-items: center;
+        height: 100%;
+      }
+
       .sticker img {
-        width: 15mm;
-        height: 19mm;
+        width: 14mm;
+        height: 17mm;
         object-fit: cover;
         margin-right: 1.5mm;
-        border: 1px solid #777;
+        border: 0.8px solid #555;
         border-radius: 2px;
         flex-shrink: 0;
       }
 
       .sticker-details {
-        line-height: 1.15;
-        width: calc(100% - 16.5mm);
+        line-height: 1.1;
+        width: calc(100% - 15.5mm);
         overflow: hidden;
       }
 
-      /* नाम बड़ा + ऑटोमैटिक Wrap होकर नीचे की लाइन में आने के लिए */
+      /* छात्र का नाम - बड़ा और ऑटोमैटिक Wrap */
       .student-name {
-        font-size: 10px;
+        font-size: 9.5px;
         font-weight: bold;
         color: #000;
-        white-space: normal; /* नाम लंबा होने पर अपने आप दूसरी लाइन में आ जाएगा */
-        word-break: break-word; /* बड़ा शब्द भी बॉक्स में ही एडजस्ट होगा */
-        max-height: 22px; /* नाम 2 लाइन से ज़्यादा न फैले */
+        white-space: normal;
+        word-break: break-word;
+        max-height: 20px;
         overflow: hidden;
-        margin-bottom: 2px;
+        margin-bottom: 1px;
       }
 
       .student-info {
@@ -121,7 +157,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         color: #222;
-        font-size: 8px;
+        font-size: 7.5px;
       }
     }
   </style>
@@ -263,13 +299,19 @@
           for (let i = 0; i < qty; i++) {
             printArea.innerHTML += `
               <div class="sticker">
-                <img src="${photoUrl}" 
-                     loading="eager"
-                     onerror="this.onerror=null; this.src='https://via.placeholder.com/50';" />
-                <div class="sticker-details">
-                  <div class="student-name">${student["Student Name"] || ''}</div>
-                  <div class="student-info"><b>C/O:</b> ${student["Father's Name"] || ''}</div>
-                  <div class="student-info"><b>Class:</b> ${student["Current Class"] || ''} (${student["Section"] || ''})</div>
+                <div class="school-header">
+                  <div class="school-name">Ambedkar Public School</div>
+                  <div class="school-address">Madhopur Campierganj GKP</div>
+                </div>
+                <div class="student-body">
+                  <img src="${photoUrl}" 
+                       loading="eager"
+                       onerror="this.onerror=null; this.src='https://via.placeholder.com/50';" />
+                  <div class="sticker-details">
+                    <div class="student-name">${student["Student Name"] || ''}</div>
+                    <div class="student-info"><b>C/O:</b> ${student["Father's Name"] || ''}</div>
+                    <div class="student-info"><b>Class:</b> ${student["Current Class"] || ''} (${student["Section"] || ''})</div>
+                  </div>
                 </div>
               </div>
             `;
