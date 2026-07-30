@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer (Auto Latest Session)</title>
+  <title>Student Sticker Printer (Clean Layout)</title>
   <style>
     @page {
       size: A4 portrait;
@@ -73,8 +73,9 @@
         page-break-after: always;
       }
 
+      /* डॉट-डॉट वाला बॉर्डर हटा दिया गया है (border: none) */
       .sticker {
-        border: 0.2mm dashed #bbb;
+        border: none;
         box-sizing: border-box;
         padding: 1mm 1.5mm;
         display: flex;
@@ -208,7 +209,6 @@
         const res = await fetch(SCRIPT_URL);
         allData = await res.json();
         
-        // बैकग्राउंड में इमेजेस प्री-लोड करना
         allData.forEach(student => {
           let fileId = getFileId(student);
           if (fileId) {
@@ -234,34 +234,28 @@
     }
 
     function populateDropdowns() {
-      // सभी उपलब्ध सत्र निकालना और उन्हें सही क्रम (Sort) में लगाना
       let sessions = [...new Set(allData.map(item => String(item["Current Session"] || '').trim()))].filter(Boolean);
-      sessions.sort(); // उदा. ["2025-2026", "2026-2027"]
+      sessions.sort();
 
       const classes = [...new Set(allData.map(item => String(item["Current Class"] || '').trim()))].filter(Boolean);
       const sections = [...new Set(allData.map(item => String(item["Section"] || '').trim()))].filter(Boolean);
 
-      // Session Dropdown भरना
       const sessionSel = document.getElementById("sessionSelect");
       sessionSel.innerHTML = '<option value="">-- Choose Session --</option>';
       sessions.forEach(s => sessionSel.innerHTML += `<option value="${s}">${s}</option>`);
 
-      // बाय डिफॉल्ट सबसे नया/हालिया सत्र (Latest Session) चुनना
       if (sessions.length > 0) {
         sessionSel.value = sessions[sessions.length - 1];
       }
 
-      // Class Dropdown भरना
       const classSel = document.getElementById("classSelect");
       classSel.innerHTML = '<option value="">-- Choose Class --</option>';
       classes.forEach(c => classSel.innerHTML += `<option value="${c}">${c}</option>`);
 
-      // Section Dropdown भरना
       const secSel = document.getElementById("sectionSelect");
       secSel.innerHTML = '<option value="">-- Choose Section --</option>';
       sections.forEach(s => secSel.innerHTML += `<option value="${s}">${s}</option>`);
 
-      // फ़िल्टर अप्लाई करना
       filterStudents();
     }
 
