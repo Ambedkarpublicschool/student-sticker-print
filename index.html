@@ -1,1 +1,206 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Sticker Printer</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .controls { margin-bottom: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; }
+    select, button { padding: 8px 12px; margin-right: 10px; font-size: 14px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #007bff; color: white; }
+    
+    /* प्रिंट के समय UI कंट्रोल छुपाना */
+    @media print {
+      .no-print { display: none !important; }
+      body { margin: 0; padding: 0; }
+      .print-area { display: block !important; }
+    }
 
+    /* A4 शीट पर स्टीकर लेआउट */
+    .sticker-container {
+      display: none;
+      flex-wrap: wrap;
+      gap: 2mm;
+      width: 210mm; /* A4 Width */
+    }
+
+    /* 25mm x 48mm स्टीकर साइज */
+    .sticker {
+      width: 48mm;
+      height: 25mm;
+      border: 1px dashed #666;
+      box-sizing: border-box;
+      padding: 2mm;
+      display: flex;
+      align-items: center;
+      font-size: 9px;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+
+    .sticker img {
+      width: 18mm;
+      height: 21mm;
+      object-fit: cover;
+      margin-right: 2mm;
+      border: 1px solid #ccc;
+    }
+
+    .sticker-details {
+      line-height: 1.2;
+    }
+
+    .sticker-details div {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 26mm;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="no-print controls">
+    <h2>Student Sticker Printing System</h2>
+    <label>Class: </label>
+    <select id="classSelect" onchange="filterStudents()">
+      <option value="">-- Choose Class --</option>
+    </select>
+
+    <label>Section: </label>
+    <select id="sectionSelect" onchange="filterStudents()">
+      <option value="">-- Choose Section --</option>
+    </select>
+
+    <button onclick="generatePrintArea()">Print Preview</button>
+  </div>
+
+  <!-- स्टूडेंट टेबल (Selection & Quantity) -->
+  <table id="studentTable" class="no-print">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>Roll No</th>
+        <th>Name</th>
+        <th>Father's Name</th>
+        <th>Class</th>
+        <th>Section</th>
+        <th>No. of Stickers</th>
+      </tr>
+    </thead>
+    <tbody id="studentTableBody">
+      <tr><td colspan="7">डेटा लोड हो रहा है या क्लास सेलेक्ट करें...</td></tr>
+    </tbody>
+  </table>
+
+  <!-- प्रिंट एरिया (केवल प्रिंट के दौरान दिखेगा) -->
+  <div id="printArea" class="sticker-container print-area"></div>
+
+  <script>
+    // यहाँ अपना Apps Script Web App URL डालें
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx41DDOz-048PiJg7B3RPDUYQh6z17KgUyFVbxEtREuNDLAx_i5meLtJujq_w7Kp9icwQ/exec"; 
+    let allData = [];
+
+    // गूगल शीट से डेटा फेच करना
+    async function loadData() {
+      try {
+        const res = await fetch(SCRIPT_URL);
+        allData = await res.json();
+        populateDropdowns();
+      } catch (err) {
+        alert("डेटा लोड करने में समस्या आई: " + err);
+      }
+    }
+
+    function populateDropdowns() {
+      const classes = [...new Set(allData.map(item => item["Current Class"]))].filter(Boolean);
+      const sections = [...new Set(allData.map(item => item["Section"]))].filter(Boolean);
+
+      const classSel = document.getElementById("classSelect");
+      classes.forEach(c => classSel.innerHTML += `<option value="${c}">${c}</option>`);
+
+      const secSel = document.getElementById("sectionSelect");
+      sections.forEach(s => secSel.innerHTML += `<option value="${s}">${s}</option>`);
+    }
+
+    function filterStudents() {
+      const selectedClass = document.getElementById("classSelect").value;
+      const selectedSec = document.getElementById("sectionSelect").value;
+
+      const filtered = allData.filter(item => 
+        (!selectedClass || item["Current Class"] == selectedClass) &&
+        (!selectedSec || item["Section"] == selectedSec)
+      );
+
+      const tbody = document.getElementById("studentTableBody");
+      tbody.innerHTML = "";
+
+      filtered.forEach((student, index) => {
+        tbody.innerHTML += `
+          <tr>
+            <td><input type="checkbox" class="student-check" data-index="${index}"></td>
+            <td>${student["Class Roll Number"] || ''}</td>
+            <td>${student["Student Name"] || ''}</td>
+            <td>${student["Father's Name"] || ''}</td>
+            <td>${student["Current Class"] || ''}</td>
+            <td>${student["Section"] || ''}</td>
+            <td><input type="number" class="sticker-qty" value="1" min="1" style="width:50px;"></td>
+          </tr>
+        `;
+      });
+    }
+
+    function generatePrintArea() {
+      const printArea = document.getElementById("printArea");
+      printArea.innerHTML = "";
+      
+      const rows = document.querySelectorAll("#studentTableBody tr");
+      let selectedAny = false;
+
+      rows.forEach(row => {
+        const checkbox = row.querySelector(".student-check");
+        if (checkbox && checkbox.checked) {
+          selectedAny = true;
+          const index = checkbox.getAttribute("data-index");
+          const student = allData[index];
+          const qty = parseInt(row.querySelector(".sticker-qty").value) || 1;
+
+          // Google Drive फोटो लिंक को डायरेक्ट इमेज URL में बदलना
+          let photoUrl = student["Student Photo Link (Drive)"] || "";
+          if(photoUrl.includes("id=")) {
+             const id = photoUrl.split("id=")[1].split("&")[0];
+             photoUrl = `https://drive.google.com/uc?export=view&id=${id}`;
+          }
+
+          for (let i = 0; i < qty; i++) {
+            printArea.innerHTML += `
+              <div class="sticker">
+                <img src="${photoUrl}" onerror="this.src='https://via.placeholder.com/50';" />
+                <div class="sticker-details">
+                  <div><b>${student["Student Name"] || ''}</b></div>
+                  <div>पिता: ${student["Father's Name"] || ''}</div>
+                  <div>Class: ${student["Current Class"] || ''} (${student["Section"] || ''})</div>
+                </div>
+              </div>
+            `;
+          }
+        }
+      });
+
+      if (!selectedAny) {
+        alert("कृपया कम से कम एक छात्र को चुनें!");
+        return;
+      }
+
+      printArea.style.display = "flex";
+      window.print();
+      printArea.style.display = "none";
+    }
+
+    // पेज लोड होने पर डेटा लाएँ
+    loadData();
+  </script>
+</body>
+</html>
