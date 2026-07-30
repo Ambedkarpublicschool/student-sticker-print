@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer (4x10 Grid)</title>
+  <title>Superfast Student Sticker Printer (4x10 Grid)</title>
   <style>
     /* A4 प्रिंट पेज सेटअप - शून्य मार्जिन */
     @page {
@@ -82,7 +82,7 @@
         box-sizing: border-box;
         padding: 1mm 1.5mm;
         display: flex;
-        flex-direction: column; /* ऊपर स्कूल का नाम और नीचे छात्र विवरण */
+        flex-direction: column;
         justify-content: space-between;
         overflow: hidden;
         height: 100%;
@@ -209,10 +209,30 @@
       try {
         const res = await fetch(SCRIPT_URL);
         allData = await res.json();
+        
+        // इमेजेस को बैकग्राउंड में प्री-लोड (Pre-load) करना ताकि प्रिंट के समय तुरंत दिखें
+        allData.forEach(student => {
+          let fileId = getFileId(student);
+          if (fileId) {
+            const img = new Image();
+            img.src = `https://lh3.googleusercontent.com/d/${fileId}=s150`;
+          }
+        });
+
         populateDropdowns();
       } catch (err) {
         alert("डेटा लोड करने में समस्या आई: " + err);
       }
+    }
+
+    function getFileId(student) {
+      if (student["Photo_ID"]) return student["Photo_ID"];
+      if (student["Student Photo Link (Drive)"]) {
+        const rawUrl = student["Student Photo Link (Drive)"];
+        const match = rawUrl.match(/id=([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) return match[1];
+      }
+      return null;
     }
 
     function populateDropdowns() {
@@ -262,23 +282,6 @@
       });
     }
 
-    function getFastThumbnailUrl(student) {
-      let fileId = student["Photo_ID"];
-      
-      if (!fileId && student["Student Photo Link (Drive)"]) {
-        const rawUrl = student["Student Photo Link (Drive)"];
-        const match = rawUrl.match(/id=([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
-        if (match && match[1]) {
-          fileId = match[1];
-        }
-      }
-
-      if (fileId) {
-        return `https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h120`;
-      }
-      return "https://via.placeholder.com/50";
-    }
-
     function generatePrintArea() {
       const printArea = document.getElementById("printArea");
       printArea.innerHTML = "";
@@ -294,7 +297,15 @@
           const student = currentFilteredData[index];
           const qty = parseInt(row.querySelector(".sticker-qty").value) || 1;
 
-          const photoUrl = getFastThumbnailUrl(student);
+          const fileId = getFileId(student);
+          // High speed Google Usercontent Direct Link (=s150 मतलब स्टीकर साइज की परफेक्ट लाइट इमेज)
+          const photoUrl = fileId 
+            ? `https://lh3.googleusercontent.com/d/${fileId}=s150` 
+            : 'https://via.placeholder.com/50';
+
+          const fallbackUrl = fileId 
+            ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w100` 
+            : 'https://via.placeholder.com/50';
 
           for (let i = 0; i < qty; i++) {
             printArea.innerHTML += `
@@ -305,8 +316,10 @@
                 </div>
                 <div class="student-body">
                   <img src="${photoUrl}" 
-                       loading="eager"
-                       onerror="this.onerror=null; this.src='https://via.placeholder.com/50';" />
+                       loading="eager" 
+                       decoding="async"
+                       referrerpolicy="no-referrer"
+                       onerror="this.onerror=null; this.src='${fallbackUrl}';" />
                   <div class="sticker-details">
                     <div class="student-name">${student["Student Name"] || ''}</div>
                     <div class="student-info"><b>C/O:</b> ${student["Father's Name"] || ''}</div>
@@ -324,7 +337,10 @@
         return;
       }
 
-      window.print();
+      // इमेजेस पूरी तरह रेंडर होने के लिए 200ms का छोटा पॉज़ फिर तुरंत प्रिंट पॉप-अप
+      setTimeout(() => {
+        window.print();
+      }, 200);
     }
 
     loadData();
