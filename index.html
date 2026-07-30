@@ -2,9 +2,8 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer (With Session Filter)</title>
+  <title>Student Sticker Printer (Auto Latest Session)</title>
   <style>
-    /* A4 प्रिंट पेज सेटअप - शून्य मार्जिन */
     @page {
       size: A4 portrait;
       margin: 0;
@@ -47,12 +46,10 @@
       color: white; 
     }
 
-    /* स्क्रीन पर प्रिंट एरिया छिपाना */
     .sticker-container {
       display: none;
     }
 
-    /* केवल प्रिंट करते समय का CSS */
     @media print {
       .no-print { 
         display: none !important; 
@@ -64,7 +61,6 @@
         background: white;
       }
 
-      /* A4 पेज को 4 कॉलम x 10 रो = 40 भागों में बांटना */
       .sticker-container {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr);
@@ -89,7 +85,6 @@
         width: 100%;
       }
 
-      /* स्कूल का हेडर (नाम और पता) */
       .school-header {
         text-align: center;
         border-bottom: 0.1mm solid #000;
@@ -117,7 +112,6 @@
         text-overflow: ellipsis;
       }
 
-      /* छात्र विवरण और फोटो लेआउट */
       .student-body {
         display: flex;
         align-items: center;
@@ -140,7 +134,6 @@
         overflow: hidden;
       }
 
-      /* छात्र का नाम - बड़ा और ऑटोमैटिक Wrap */
       .student-name {
         font-size: 9.5px;
         font-weight: bold;
@@ -185,7 +178,6 @@
     <button onclick="generatePrintArea()">Print Preview</button>
   </div>
 
-  <!-- स्टूडेंट टेबल -->
   <table id="studentTable" class="no-print">
     <thead>
       <tr>
@@ -204,7 +196,6 @@
     </tbody>
   </table>
 
-  <!-- प्रिंट एरिया (4x10 Grid) -->
   <div id="printArea" class="sticker-container"></div>
 
   <script>
@@ -235,7 +226,7 @@
     function getFileId(student) {
       if (student["Photo_ID"]) return student["Photo_ID"];
       if (student["Student Photo Link (Drive)"]) {
-        const rawUrl = student["Student Photo Link (Drive)"];
+        const rawUrl = String(student["Student Photo Link (Drive)"]);
         const match = rawUrl.match(/id=([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
         if (match && match[1]) return match[1];
       }
@@ -243,30 +234,34 @@
     }
 
     function populateDropdowns() {
-      const sessions = [...new Set(allData.map(item => item["Current Session"]))].filter(Boolean);
-      const classes = [...new Set(allData.map(item => item["Current Class"]))].filter(Boolean);
-      const sections = [...new Set(allData.map(item => item["Section"]))].filter(Boolean);
+      // सभी उपलब्ध सत्र निकालना और उन्हें सही क्रम (Sort) में लगाना
+      let sessions = [...new Set(allData.map(item => String(item["Current Session"] || '').trim()))].filter(Boolean);
+      sessions.sort(); // उदा. ["2025-2026", "2026-2027"]
 
-      // Session Dropdown
+      const classes = [...new Set(allData.map(item => String(item["Current Class"] || '').trim()))].filter(Boolean);
+      const sections = [...new Set(allData.map(item => String(item["Section"] || '').trim()))].filter(Boolean);
+
+      // Session Dropdown भरना
       const sessionSel = document.getElementById("sessionSelect");
       sessionSel.innerHTML = '<option value="">-- Choose Session --</option>';
       sessions.forEach(s => sessionSel.innerHTML += `<option value="${s}">${s}</option>`);
 
-      // डिफ़ॉल्ट रूप से सबसे नया सेशन सेलेक्ट करना (यदि उपलब्ध हो)
+      // बाय डिफॉल्ट सबसे नया/हालिया सत्र (Latest Session) चुनना
       if (sessions.length > 0) {
         sessionSel.value = sessions[sessions.length - 1];
       }
 
-      // Class Dropdown
+      // Class Dropdown भरना
       const classSel = document.getElementById("classSelect");
       classSel.innerHTML = '<option value="">-- Choose Class --</option>';
       classes.forEach(c => classSel.innerHTML += `<option value="${c}">${c}</option>`);
 
-      // Section Dropdown
+      // Section Dropdown भरना
       const secSel = document.getElementById("sectionSelect");
       secSel.innerHTML = '<option value="">-- Choose Section --</option>';
       sections.forEach(s => secSel.innerHTML += `<option value="${s}">${s}</option>`);
 
+      // फ़िल्टर अप्लाई करना
       filterStudents();
     }
 
@@ -276,9 +271,9 @@
       const selectedSec = document.getElementById("sectionSelect").value;
 
       currentFilteredData = allData.filter(item => 
-        (!selectedSession || String(item["Current Session"]).trim() === String(selectedSession).trim()) &&
-        (!selectedClass || String(item["Current Class"]).trim() === String(selectedClass).trim()) &&
-        (!selectedSec || String(item["Section"]).trim() === String(selectedSec).trim())
+        (!selectedSession || String(item["Current Session"] || '').trim() === selectedSession) &&
+        (!selectedClass || String(item["Current Class"] || '').trim() === selectedClass) &&
+        (!selectedSec || String(item["Section"] || '').trim() === selectedSec)
       );
 
       const tbody = document.getElementById("studentTableBody");
@@ -361,7 +356,7 @@
 
       setTimeout(() => {
         window.print();
-      }, 200);
+      }, 150);
     }
 
     loadData();
