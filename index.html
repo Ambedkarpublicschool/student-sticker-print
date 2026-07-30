@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Superfast Student Sticker Printer (4x10 Grid)</title>
+  <title>Student Sticker Printer (With Session Filter)</title>
   <style>
     /* A4 प्रिंट पेज सेटअप - शून्य मार्जिन */
     @page {
@@ -117,7 +117,7 @@
         text-overflow: ellipsis;
       }
 
-      /* छात्र विवरण और फोटो वाला लेआउट */
+      /* छात्र विवरण और फोटो लेआउट */
       .student-body {
         display: flex;
         align-items: center;
@@ -166,6 +166,12 @@
 
   <div class="no-print controls">
     <h2>Student Sticker Printing System</h2>
+    
+    <label>Session: </label>
+    <select id="sessionSelect" onchange="filterStudents()">
+      <option value="">-- Choose Session --</option>
+    </select>
+
     <label>Class: </label>
     <select id="classSelect" onchange="filterStudents()">
       <option value="">-- Choose Class --</option>
@@ -187,13 +193,14 @@
         <th>Roll No</th>
         <th>Name</th>
         <th>Father's Name</th>
+        <th>Session</th>
         <th>Class</th>
         <th>Section</th>
         <th>No. of Stickers</th>
       </tr>
     </thead>
     <tbody id="studentTableBody">
-      <tr><td colspan="7">डेटा लोड हो रहा है...</td></tr>
+      <tr><td colspan="8">डेटा लोड हो रहा है...</td></tr>
     </tbody>
   </table>
 
@@ -210,7 +217,7 @@
         const res = await fetch(SCRIPT_URL);
         allData = await res.json();
         
-        // इमेजेस को बैकग्राउंड में प्री-लोड (Pre-load) करना ताकि प्रिंट के समय तुरंत दिखें
+        // बैकग्राउंड में इमेजेस प्री-लोड करना
         allData.forEach(student => {
           let fileId = getFileId(student);
           if (fileId) {
@@ -236,13 +243,26 @@
     }
 
     function populateDropdowns() {
+      const sessions = [...new Set(allData.map(item => item["Current Session"]))].filter(Boolean);
       const classes = [...new Set(allData.map(item => item["Current Class"]))].filter(Boolean);
       const sections = [...new Set(allData.map(item => item["Section"]))].filter(Boolean);
 
+      // Session Dropdown
+      const sessionSel = document.getElementById("sessionSelect");
+      sessionSel.innerHTML = '<option value="">-- Choose Session --</option>';
+      sessions.forEach(s => sessionSel.innerHTML += `<option value="${s}">${s}</option>`);
+
+      // डिफ़ॉल्ट रूप से सबसे नया सेशन सेलेक्ट करना (यदि उपलब्ध हो)
+      if (sessions.length > 0) {
+        sessionSel.value = sessions[sessions.length - 1];
+      }
+
+      // Class Dropdown
       const classSel = document.getElementById("classSelect");
       classSel.innerHTML = '<option value="">-- Choose Class --</option>';
       classes.forEach(c => classSel.innerHTML += `<option value="${c}">${c}</option>`);
 
+      // Section Dropdown
       const secSel = document.getElementById("sectionSelect");
       secSel.innerHTML = '<option value="">-- Choose Section --</option>';
       sections.forEach(s => secSel.innerHTML += `<option value="${s}">${s}</option>`);
@@ -251,10 +271,12 @@
     }
 
     function filterStudents() {
+      const selectedSession = document.getElementById("sessionSelect").value;
       const selectedClass = document.getElementById("classSelect").value;
       const selectedSec = document.getElementById("sectionSelect").value;
 
       currentFilteredData = allData.filter(item => 
+        (!selectedSession || String(item["Current Session"]).trim() === String(selectedSession).trim()) &&
         (!selectedClass || String(item["Current Class"]).trim() === String(selectedClass).trim()) &&
         (!selectedSec || String(item["Section"]).trim() === String(selectedSec).trim())
       );
@@ -263,7 +285,7 @@
       tbody.innerHTML = "";
 
       if (currentFilteredData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7">कोई रिकॉर्ड नहीं मिला।</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8">कोई रिकॉर्ड नहीं मिला।</td></tr>';
         return;
       }
 
@@ -274,6 +296,7 @@
             <td>${student["Class Roll Number"] || ''}</td>
             <td>${student["Student Name"] || ''}</td>
             <td>${student["Father's Name"] || ''}</td>
+            <td>${student["Current Session"] || ''}</td>
             <td>${student["Current Class"] || ''}</td>
             <td>${student["Section"] || ''}</td>
             <td><input type="number" class="sticker-qty" value="1" min="1" style="width:50px;"></td>
@@ -298,7 +321,6 @@
           const qty = parseInt(row.querySelector(".sticker-qty").value) || 1;
 
           const fileId = getFileId(student);
-          // High speed Google Usercontent Direct Link (=s150 मतलब स्टीकर साइज की परफेक्ट लाइट इमेज)
           const photoUrl = fileId 
             ? `https://lh3.googleusercontent.com/d/${fileId}=s150` 
             : 'https://via.placeholder.com/50';
@@ -337,7 +359,6 @@
         return;
       }
 
-      // इमेजेस पूरी तरह रेंडर होने के लिए 200ms का छोटा पॉज़ फिर तुरंत प्रिंट पॉप-अप
       setTimeout(() => {
         window.print();
       }, 200);
