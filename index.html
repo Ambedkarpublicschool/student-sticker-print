@@ -83,33 +83,36 @@
         padding: 1.5mm;
         display: flex;
         align-items: center;
-        overflow: hidden;
+        overflow: hidden; /* बॉक्स से बाहर कुछ न निकले */
         height: 100%;
         width: 100%;
       }
 
       .sticker img {
-        width: 16mm;
-        height: 20mm;
+        width: 15mm;
+        height: 19mm;
         object-fit: cover;
-        margin-right: 2mm;
+        margin-right: 1.5mm;
         border: 1px solid #777;
         border-radius: 2px;
         flex-shrink: 0;
       }
 
       .sticker-details {
-        line-height: 1.2;
-        width: calc(100% - 18mm);
+        line-height: 1.15;
+        width: calc(100% - 16.5mm);
+        overflow: hidden;
       }
 
+      /* नाम बड़ा + ऑटोमैटिक Wrap होकर नीचे की लाइन में आने के लिए */
       .student-name {
-        font-size: 11px;
+        font-size: 10px;
         font-weight: bold;
         color: #000;
-        white-space: nowrap;
+        white-space: normal; /* नाम लंबा होने पर अपने आप दूसरी लाइन में आ जाएगा */
+        word-break: break-word; /* बड़ा शब्द भी बॉक्स में ही एडजस्ट होगा */
+        max-height: 22px; /* नाम 2 लाइन से ज़्यादा न फैले */
         overflow: hidden;
-        text-overflow: ellipsis;
         margin-bottom: 2px;
       }
 
@@ -118,7 +121,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
         color: #222;
-        font-size: 8.5px;
+        font-size: 8px;
       }
     }
   </style>
@@ -223,7 +226,6 @@
       });
     }
 
-    // थंबनेल यूआरएल (Fast Loading) जनरेट करने का फ़ंक्शन
     function getFastThumbnailUrl(student) {
       let fileId = student["Photo_ID"];
       
@@ -236,7 +238,6 @@
       }
 
       if (fileId) {
-        // sz=w100-h120 साइज पैरामीटर से गूगल बहुत ही हल्की और तेज़ थंबनेल इमेज देता है
         return `https://drive.google.com/thumbnail?id=${fileId}&sz=w100-h120`;
       }
       return "https://via.placeholder.com/50";
