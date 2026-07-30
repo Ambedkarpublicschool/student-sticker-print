@@ -2,75 +2,125 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer</title>
+  <title>Student Sticker Printer (4x10 Grids/A4)</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    .controls { margin-bottom: 20px; padding: 15px; background: #f0f0f0; border-radius: 5px; }
-    select, button { padding: 8px 12px; margin-right: 10px; font-size: 14px; cursor: pointer; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-    th { background-color: #007bff; color: white; }
-    
-    /* प्रिंट के समय कंट्रोल छुपाना */
-    @media print {
-      .no-print { display: none !important; }
-      body { margin: 0; padding: 0; }
-      .print-area { display: flex !important; }
+    /* A4 प्रिंट पेज सेटअप - शून्य मार्जिन */
+    @page {
+      size: A4 portrait;
+      margin: 0; /* प्रिंटर मार्जिन पूरी तरह शून्य */
     }
 
-    /* A4 शीट पर स्टीकर लेआउट */
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 20px; 
+      padding: 0;
+    }
+
+    .controls { 
+      margin-bottom: 20px; 
+      padding: 15px; 
+      background: #f0f0f0; 
+      border-radius: 5px; 
+    }
+
+    select, button { 
+      padding: 8px 12px; 
+      margin-right: 10px; 
+      font-size: 14px; 
+      cursor: pointer; 
+    }
+
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 15px; 
+    }
+
+    th, td { 
+      border: 1px solid #ddd; 
+      padding: 8px; 
+      text-align: left; 
+    }
+
+    th { 
+      background-color: #007bff; 
+      color: white; 
+    }
+
+    /* स्क्रीन पर प्रिंट एरिया छिपाना */
     .sticker-container {
       display: none;
-      flex-wrap: wrap;
-      gap: 2mm;
-      width: 210mm; /* A4 Width */
     }
 
-    /* 25mm x 48mm स्टीकर साइज */
-    .sticker {
-      width: 48mm;
-      height: 25mm;
-      border: 1px dashed #666;
-      box-sizing: border-box;
-      padding: 1.5mm;
-      display: flex;
-      align-items: center;
-      font-size: 8px;
-      overflow: hidden;
-      page-break-inside: avoid;
-    }
+    /* केवल प्रिंट करते समय का CSS */
+    @media print {
+      .no-print { 
+        display: none !important; 
+      }
+      
+      body { 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        background: white;
+      }
 
-    .sticker img {
-      width: 17mm;
-      height: 21mm;
-      object-fit: cover;
-      margin-right: 2mm;
-      border: 1px solid #ccc;
-      border-radius: 2px;
-      flex-shrink: 0;
-    }
+      /* A4 पेज को 4 कॉलम x 10 रो = 40 भागों में बांटना */
+      .sticker-container {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr); /* 4 बराबर कॉलम */
+        grid-template-rows: repeat(10, 1fr);   /* 10 बराबर रो */
+        width: 210mm;   /* A4 चौड़ाई */
+        height: 297mm;  /* A4 लंबाई */
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        page-break-after: always;
+      }
 
-    .sticker-details {
-      line-height: 1.2;
-      width: 25mm;
-    }
+      /* प्रत्येक स्टीकर की डिजाइनिंग */
+      .sticker {
+        border: 0.2mm dashed #bbb; /* कटिंग गाइड के लिए हल्का बॉर्डर */
+        box-sizing: border-box;
+        padding: 1.5mm;
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        height: 100%;
+        width: 100%;
+      }
 
-    /* छात्र का नाम बड़ा और बोल्ड */
-    .student-name {
-      font-size: 11px;
-      font-weight: bold;
-      color: #000;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 2px;
-    }
+      .sticker img {
+        width: 16mm;
+        height: 20mm;
+        object-fit: cover;
+        margin-right: 2mm;
+        border: 1px solid #777;
+        border-radius: 2px;
+        flex-shrink: 0;
+      }
 
-    .student-info {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #333;
+      .sticker-details {
+        line-height: 1.2;
+        width: calc(100% - 18mm);
+      }
+
+      .student-name {
+        font-size: 11px;
+        font-weight: bold;
+        color: #000;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-bottom: 2px;
+      }
+
+      .student-info {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        color: #222;
+        font-size: 8.5px;
+      }
     }
   </style>
 </head>
@@ -105,19 +155,18 @@
       </tr>
     </thead>
     <tbody id="studentTableBody">
-      <tr><td colspan="7">डेटा लोड हो रहा है या क्लास सेलेक्ट करें...</td></tr>
+      <tr><td colspan="7">डेटा लोड हो रहा है...</td></tr>
     </tbody>
   </table>
 
-  <!-- प्रिंट एरिया -->
-  <div id="printArea" class="sticker-container print-area"></div>
+  <!-- प्रिंट एरिया (4x10 Grid) -->
+  <div id="printArea" class="sticker-container"></div>
 
   <script>
-    // यहाँ अपना Apps Script Web App URL डालें
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx41DDOz-048PiJg7B3RPDUYQh6z17KgUyFVbxEtREuNDLAx_i5meLtJujq_w7Kp9icwQ/exec"; 
     let allData = [];
+    let currentFilteredData = [];
 
-    // गूगल शीट से डेटा लाना
     async function loadData() {
       try {
         const res = await fetch(SCRIPT_URL);
@@ -139,26 +188,28 @@
       const secSel = document.getElementById("sectionSelect");
       secSel.innerHTML = '<option value="">-- Choose Section --</option>';
       sections.forEach(s => secSel.innerHTML += `<option value="${s}">${s}</option>`);
+
+      filterStudents();
     }
 
     function filterStudents() {
       const selectedClass = document.getElementById("classSelect").value;
       const selectedSec = document.getElementById("sectionSelect").value;
 
-      const filtered = allData.filter(item => 
-        (!selectedClass || item["Current Class"] == selectedClass) &&
-        (!selectedSec || item["Section"] == selectedSec)
+      currentFilteredData = allData.filter(item => 
+        (!selectedClass || String(item["Current Class"]).trim() === String(selectedClass).trim()) &&
+        (!selectedSec || String(item["Section"]).trim() === String(selectedSec).trim())
       );
 
       const tbody = document.getElementById("studentTableBody");
       tbody.innerHTML = "";
 
-      if (filtered.length === 0) {
+      if (currentFilteredData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7">कोई रिकॉर्ड नहीं मिला।</td></tr>';
         return;
       }
 
-      filtered.forEach((student, index) => {
+      currentFilteredData.forEach((student, index) => {
         tbody.innerHTML += `
           <tr>
             <td><input type="checkbox" class="student-check" data-index="${index}"></td>
@@ -173,23 +224,6 @@
       });
     }
 
-    // Google Drive फोटो URL को डायरेक्ट लोड होने वाले लिंक में बदलने वाला फ़ंक्शन
-    function getDirectPhotoUrl(driveUrl) {
-      if (!driveUrl) return "https://via.placeholder.com/50";
-      
-      let fileId = "";
-      if (driveUrl.includes("id=")) {
-        fileId = driveUrl.split("id=")[1].split("&")[0];
-      } else if (driveUrl.includes("/d/")) {
-        fileId = driveUrl.split("/d/")[1].split("/")[0];
-      }
-
-      if (fileId) {
-        return `https://lh3.googleusercontent.com/d/${fileId}=s220`;
-      }
-      return driveUrl;
-    }
-
     function generatePrintArea() {
       const printArea = document.getElementById("printArea");
       printArea.innerHTML = "";
@@ -201,16 +235,29 @@
         const checkbox = row.querySelector(".student-check");
         if (checkbox && checkbox.checked) {
           selectedAny = true;
-          const index = checkbox.getAttribute("data-index");
-          const student = allData[index];
+          const index = parseInt(checkbox.getAttribute("data-index"));
+          const student = currentFilteredData[index];
           const qty = parseInt(row.querySelector(".sticker-qty").value) || 1;
 
-          const photoUrl = getDirectPhotoUrl(student["Student Photo Link (Drive)"]);
+          let photoUrl = "";
+          if (student["Photo_ID"]) {
+            photoUrl = `https://lh3.googleusercontent.com/d/${student["Photo_ID"]}`;
+          } else if (student["Student Photo Link (Drive)"]) {
+            const rawUrl = student["Student Photo Link (Drive)"];
+            const match = rawUrl.match(/id=([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+            if (match && match[1]) {
+              photoUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
+            } else {
+              photoUrl = rawUrl;
+            }
+          }
 
           for (let i = 0; i < qty; i++) {
             printArea.innerHTML += `
               <div class="sticker">
-                <img src="${photoUrl}" referrerpolicy="no-referrer" onerror="this.src='https://via.placeholder.com/50';" />
+                <img src="${photoUrl}" 
+                     referrerpolicy="no-referrer" 
+                     onerror="this.onerror=null; this.src='https://drive.google.com/thumbnail?id=${student["Photo_ID"]}';" />
                 <div class="sticker-details">
                   <div class="student-name">${student["Student Name"] || ''}</div>
                   <div class="student-info"><b>पिता:</b> ${student["Father's Name"] || ''}</div>
@@ -227,9 +274,7 @@
         return;
       }
 
-      printArea.style.display = "flex";
       window.print();
-      printArea.style.display = "none";
     }
 
     loadData();
