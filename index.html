@@ -2,7 +2,7 @@
 <html lang="hi">
 <head>
   <meta charset="UTF-8">
-  <title>Student Sticker Printer (Clean Layout)</title>
+  <title>Student Sticker Printer (Multi-page 40 Grid)</title>
   <style>
     @page {
       size: A4 portrait;
@@ -46,10 +46,12 @@
       color: white; 
     }
 
-    .sticker-container {
+    /* स्क्रीन पर प्रिंट एरिया छिपाना */
+    #printArea {
       display: none;
     }
 
+    /* केवल प्रिंट करते समय का CSS */
     @media print {
       .no-print { 
         display: none !important; 
@@ -61,7 +63,12 @@
         background: white;
       }
 
-      .sticker-container {
+      #printArea {
+        display: block !important;
+      }
+
+      /* हर 40 कार्ड्स का 1 A4 पेज */
+      .a4-page {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr);
         grid-template-rows: repeat(10, 1fr);
@@ -70,10 +77,10 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-        page-break-after: always;
+        page-break-after: always; /* 40 कार्ड के बाद पेज ब्रेक */
+        break-after: page;
       }
 
-      /* डॉट-डॉट वाला बॉर्डर हटा दिया गया है (border: none) */
       .sticker {
         border: none;
         box-sizing: border-box;
@@ -197,7 +204,8 @@
     </tbody>
   </table>
 
-  <div id="printArea" class="sticker-container"></div>
+  <!-- मुख्य प्रिंट कंटेनर -->
+  <div id="printArea"></div>
 
   <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx41DDOz-048PiJg7B3RPDUYQh6z17KgUyFVbxEtREuNDLAx_i5meLtJujq_w7Kp9icwQ/exec"; 
@@ -299,12 +307,12 @@
       printArea.innerHTML = "";
       
       const rows = document.querySelectorAll("#studentTableBody tr");
-      let selectedAny = false;
+      let allStickersHTML = [];
 
+      // 1. चुने गए सभी स्टीकर्स की HTML लिस्ट बनाना
       rows.forEach(row => {
         const checkbox = row.querySelector(".student-check");
         if (checkbox && checkbox.checked) {
-          selectedAny = true;
           const index = parseInt(checkbox.getAttribute("data-index"));
           const student = currentFilteredData[index];
           const qty = parseInt(row.querySelector(".sticker-qty").value) || 1;
@@ -318,34 +326,44 @@
             ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w100` 
             : 'https://via.placeholder.com/50';
 
-          for (let i = 0; i < qty; i++) {
-            printArea.innerHTML += `
-              <div class="sticker">
-                <div class="school-header">
-                  <div class="school-name">Ambedkar Public School</div>
-                  <div class="school-address">Madhopur Campierganj GKP</div>
-                </div>
-                <div class="student-body">
-                  <img src="${photoUrl}" 
-                       loading="eager" 
-                       decoding="async"
-                       referrerpolicy="no-referrer"
-                       onerror="this.onerror=null; this.src='${fallbackUrl}';" />
-                  <div class="sticker-details">
-                    <div class="student-name">${student["Student Name"] || ''}</div>
-                    <div class="student-info"><b>C/O:</b> ${student["Father's Name"] || ''}</div>
-                    <div class="student-info"><b>Class:</b> ${student["Current Class"] || ''} (${student["Section"] || ''})</div>
-                  </div>
+          const stickerHTML = `
+            <div class="sticker">
+              <div class="school-header">
+                <div class="school-name">Ambedkar Public School</div>
+                <div class="school-address">Madhopur Campierganj GKP</div>
+              </div>
+              <div class="student-body">
+                <img src="${photoUrl}" 
+                     loading="eager" 
+                     decoding="async"
+                     referrerpolicy="no-referrer"
+                     onerror="this.onerror=null; this.src='${fallbackUrl}';" />
+                <div class="sticker-details">
+                  <div class="student-name">${student["Student Name"] || ''}</div>
+                  <div class="student-info"><b>C/O:</b> ${student["Father's Name"] || ''}</div>
+                  <div class="student-info"><b>Class:</b> ${student["Current Class"] || ''} (${student["Section"] || ''})</div>
                 </div>
               </div>
-            `;
+            </div>
+          `;
+
+          for (let i = 0; i < qty; i++) {
+            allStickersHTML.push(stickerHTML);
           }
         }
       });
 
-      if (!selectedAny) {
+      if (allStickersHTML.length === 0) {
         alert("कृपया कम से कम एक छात्र को चुनें!");
         return;
+      }
+
+      // 2. हर 40 स्टीकर के लिए एक अलग A4 पेज डिव (div.a4-page) बनाना
+      for (let i = 0; i < allStickersHTML.length; i += 40) {
+        const pageDiv = document.createElement("div");
+        pageDiv.className = "a4-page";
+        pageDiv.innerHTML = allStickersHTML.slice(i, i + 40).join("");
+        printArea.appendChild(pageDiv);
       }
 
       setTimeout(() => {
